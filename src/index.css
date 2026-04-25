@@ -1,11 +1,11 @@
 ﻿@import "tailwindcss";
 
-/* Custom global styles */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* Custom global styles
+ * NOTE: Do NOT add unlayered global resets like `* { margin:0; padding:0 }` here.
+ * Tailwind v4 puts every utility inside `@layer utilities`, and unlayered rules
+ * win over layered ones in the cascade — that would silently override every
+ * padding/margin utility. Tailwind's preflight already handles the reset.
+ */
 
 body {
   margin: 0;
