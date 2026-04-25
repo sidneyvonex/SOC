@@ -19,8 +19,13 @@ import {
   Lock,
   EyeOff,
   Server,
+  UserCircle2,
+  IdCard,
+  Clock,
+  LogOut,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
+import type { ComponentType, SVGProps } from 'react';
 
 export const Dashboard = () => {
   const { user, logout, canViewReport, canEditReport } = useAuth();
@@ -70,19 +75,23 @@ export const Dashboard = () => {
   // editing/triage of existing reports is what's restricted by clearance.
   const canSubmit = !!user;
 
-  const handleLogout = async () => {
-    const result = await Swal.fire({
-      title: 'Sign out?',
-      text: 'Your session will end and audit log will record this action.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, sign out',
-      cancelButtonText: 'Cancel',
-      reverseButtons: true,
+  const handleLogout = () => {
+    toast('Sign out of secure session?', {
+      description: 'Your session will end and the audit log will record this action.',
+      icon: <LogOut className="w-4 h-4" />,
+      duration: 8000,
+      action: {
+        label: 'Sign out',
+        onClick: () => {
+          toast.success('Signed out', { description: 'Session ended.', duration: 1400 });
+          logout();
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => undefined,
+      },
     });
-    if (result.isConfirmed) {
-      logout();
-    }
   };
 
   // Setter that updates state and persists
@@ -234,15 +243,15 @@ const OperatorCard = ({ hiddenCount }: { hiddenCount: number }) => {
       </div>
 
       <div className="space-y-3">
-        <Row icon="👤" label="Full name" value={user?.fullName ?? '—'} />
-        <Row icon="🪪" label="Username" value={user?.username ?? '—'} />
+        <Row icon={UserCircle2} label="Full name" value={user?.fullName ?? '—'} />
+        <Row icon={IdCard} label="Username" value={user?.username ?? '—'} />
         <Row
-          icon="🛡️"
+          icon={ShieldCheck}
           label="Clearance"
           value={user?.clearanceLevel?.replace('_', ' ') ?? '—'}
         />
         <Row
-          icon="🕒"
+          icon={Clock}
           label="Last login"
           value={
             user?.lastLogin
@@ -270,10 +279,12 @@ const OperatorCard = ({ hiddenCount }: { hiddenCount: number }) => {
   );
 };
 
-const Row = ({ icon, label, value }: { icon: string; label: string; value: string }) => (
+type IconType = ComponentType<SVGProps<SVGSVGElement> & { strokeWidth?: number }>;
+
+const Row = ({ icon: Icon, label, value }: { icon: IconType; label: string; value: string }) => (
   <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-b-0">
     <div className="flex items-center gap-2.5 text-sm text-slate-600 font-medium">
-      <span className="text-base">{icon}</span>
+      <Icon className="w-4 h-4 text-slate-400" strokeWidth={2} />
       {label}
     </div>
     <div className="text-sm text-slate-900 font-semibold truncate max-w-[55%] text-right">

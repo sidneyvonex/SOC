@@ -3,23 +3,25 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { DEMO_USERS } from '../constants';
-import { Lock, Shield, User, KeyRound, AlertTriangle, Loader2 } from 'lucide-react';
-import Swal from 'sweetalert2';
-
-/**
- * Login Component
- * Provides authentication interface with role-based access
- * 
- * Security features:
- * - No plain text password display
- * - Login attempt tracking
- * - Clear indication of demo credentials (would be removed in production)
- * - Session management via AuthContext
- */
+import {
+  Lock,
+  Shield,
+  User,
+  KeyRound,
+  AlertTriangle,
+  Loader2,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Sparkles,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { SecurityIllustration } from './SecurityIllustration';
 
 export const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -30,30 +32,21 @@ export const Login = () => {
 
     try {
       const success = await login(username, password);
-      
+
       if (success) {
-        await Swal.fire({
-          icon: 'success',
-          title: 'Access Granted',
-          text: 'Authentication successful',
-          timer: 1500,
-          showConfirmButton: false,
+        toast.success('Access granted', {
+          description: 'Authentication successful — entering Operations Centre',
+          duration: 1800,
         });
-        navigate('/dashboard');
+        setTimeout(() => navigate('/dashboard'), 600);
       } else {
-        await Swal.fire({
-          icon: 'error',
-          title: 'Access Denied',
-          text: 'Invalid credentials. Please try again.',
-          confirmButtonText: 'OK',
+        toast.error('Access denied', {
+          description: 'Invalid credentials. Please verify and try again.',
         });
       }
-    } catch (err) {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Authentication Error',
-        text: 'An error occurred. Please try again.',
-        confirmButtonText: 'OK',
+    } catch {
+      toast.error('Authentication error', {
+        description: 'Something went wrong. Try again in a moment.',
       });
     } finally {
       setIsLoading(false);
@@ -63,143 +56,253 @@ export const Login = () => {
   const quickLogin = (role: keyof typeof DEMO_USERS) => {
     setUsername(DEMO_USERS[role].username);
     setPassword(DEMO_USERS[role].password);
+    toast.message('Demo credentials loaded', {
+      description: `Filled in for the ${role.toUpperCase()} role`,
+      duration: 1400,
+    });
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen flex bg-slate-50">
+      {/* Left: Brand + illustration */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-linear-to-br from-indigo-600 via-violet-600 to-fuchsia-600 overflow-hidden">
+        {/* Decorative blurred orbs */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-fuchsia-400 rounded-full mix-blend-screen filter blur-3xl opacity-30" />
+          <div className="absolute -bottom-40 -right-32 w-[28rem] h-[28rem] bg-indigo-400 rounded-full mix-blend-screen filter blur-3xl opacity-30" />
+          <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-violet-300 rounded-full mix-blend-screen filter blur-3xl opacity-20" />
+        </div>
+
+        {/* Subtle grid */}
+        <div
+          className="absolute inset-0 opacity-[0.07] pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+          }}
+        />
+
+        <div className="relative z-10 flex flex-col justify-between w-full p-10 xl:p-14 text-white">
+          {/* Brand */}
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center">
+              <Shield className="w-6 h-6 text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <div className="font-bold tracking-tight text-lg leading-none">G4S SOC</div>
+              <div className="text-[11px] uppercase tracking-widest text-white/70 mt-1">
+                Security Operations Centre
+              </div>
+            </div>
+          </div>
+
+          {/* Illustration + tagline */}
+          <div className="flex-1 flex flex-col items-center justify-center -mt-8">
+            <SecurityIllustration className="w-full max-w-lg drop-shadow-2xl" />
+            <div className="mt-8 text-center max-w-md">
+              <h2 className="text-3xl xl:text-4xl font-bold tracking-tight leading-tight">
+                Field intelligence, <br />
+                <span className="text-fuchsia-200">secured end-to-end.</span>
+              </h2>
+              <p className="mt-3 text-sm text-white/75 leading-relaxed">
+                Sign in to triage incidents, coordinate response teams and keep your operators in
+                the loop — all from one classified workspace.
+              </p>
+            </div>
+          </div>
+
+          {/* Footer credentials */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm">
+              <Lock className="w-3.5 h-3.5" />
+              TLS 1.3 mTLS
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm">
+              <Sparkles className="w-3.5 h-3.5" />
+              Activity audited
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/20 border border-rose-300/40 backdrop-blur-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-300 animate-pulse" />
+              Classified
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-red-500 to-pink-600 rounded-2xl mb-4 shadow-2xl">
-            <Shield className="w-10 h-10 text-white" />
-          </div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/30 border border-red-400/50 rounded-full mb-3 backdrop-blur-sm">
-            <Lock className="w-4 h-4 text-red-300" />
-            <span className="text-red-200 text-sm font-bold tracking-wider">CLASSIFIED</span>
-          </div>
-          <h1 className="text-5xl font-bold text-white mb-2 tracking-tight drop-shadow-lg">G4S SECURITY</h1>
-          <p className="text-purple-100 text-lg font-medium">Security Operations Centre</p>
-        </div>
-
-        {/* Login Card - More visible with solid background */}
-        <div className="bg-slate-800/95 backdrop-blur-md rounded-3xl shadow-2xl border border-purple-500/30 overflow-hidden">
-          <div className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-white">Username</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-700/80 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
-                    required
-                    autoComplete="username"
-                    disabled={isLoading}
-                  />
-                </div>
+      {/* Right: Form */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 lg:w-1/2">
+        <div className="w-full max-w-md">
+          {/* Mobile brand */}
+          <div className="flex lg:hidden items-center gap-3 mb-8">
+            <div className="w-11 h-11 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
+              <Shield className="w-6 h-6 text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <div className="font-bold tracking-tight text-lg leading-none text-slate-900">
+                G4S SOC
               </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-white">Password</label>
-                <div className="relative">
-                  <KeyRound className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-700/80 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
-                    required
-                    autoComplete="current-password"
-                    disabled={isLoading}
-                  />
-                </div>
+              <div className="text-[11px] uppercase tracking-widest text-slate-500 mt-1">
+                Security Operations Centre
               </div>
+            </div>
+          </div>
 
-              <button 
-                type="submit" 
-                className="w-full py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    AUTHENTICATING...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-5 h-5" />
-                    SECURE LOGIN
-                  </>
-                )}
-              </button>
-            </form>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+              Welcome back, operator
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Authenticate to enter your secure workspace.
+            </p>
+          </div>
 
-            {/* Demo Access */}
-            <div className="mt-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <label htmlFor="username" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Username
+              </label>
               <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-600"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-slate-800 text-purple-300 font-semibold">DEMO ACCESS</span>
-                </div>
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g. analyst"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition font-medium"
+                  required
+                  autoComplete="username"
+                  disabled={isLoading}
+                />
               </div>
+            </div>
 
-              <div className="mt-4 space-y-2">
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Password
+              </label>
+              <div className="relative">
+                <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition font-medium"
+                  required
+                  autoComplete="current-password"
+                  disabled={isLoading}
+                />
                 <button
                   type="button"
-                  onClick={() => quickLogin('analyst')}
-                  className="w-full px-4 py-3 bg-slate-700/70 hover:bg-slate-600/70 border border-slate-600 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-between group"
-                  disabled={isLoading}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
                 >
-                  <span className="font-bold">ANALYST</span>
-                  <span className="text-xs text-purple-300 font-medium">View: LOW, MEDIUM</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => quickLogin('commander')}
-                  className="w-full px-4 py-3 bg-slate-700/70 hover:bg-slate-600/70 border border-slate-600 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-between group"
-                  disabled={isLoading}
-                >
-                  <span className="font-bold">COMMANDER</span>
-                  <span className="text-xs text-purple-300 font-medium">Full Access</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => quickLogin('admin')}
-                  className="w-full px-4 py-3 bg-slate-700/70 hover:bg-slate-600/70 border border-slate-600 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-between group"
-                  disabled={isLoading}
-                >
-                  <span className="font-bold">ADMIN</span>
-                  <span className="text-xs text-purple-300 font-medium">System Admin</span>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {/* Warning */}
-            <div className="mt-4 flex items-start gap-3 p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-xl">
-              <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
-              <span className="text-xs text-yellow-200 font-medium">Production: Remove demo credentials</span>
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-linear-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/40 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  Sign in securely
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Demo Access */}
+          <div className="mt-8">
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider">
+                  Quick demo access
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <DemoButton
+                role="ANALYST"
+                tag="Limited"
+                onClick={() => quickLogin('analyst')}
+                disabled={isLoading}
+                tone="emerald"
+              />
+              <DemoButton
+                role="COMMANDER"
+                tag="Full"
+                onClick={() => quickLogin('commander')}
+                disabled={isLoading}
+                tone="indigo"
+              />
+              <DemoButton
+                role="ADMIN"
+                tag="System"
+                onClick={() => quickLogin('admin')}
+                disabled={isLoading}
+                tone="rose"
+              />
+            </div>
+
+            <div className="mt-5 flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span className="text-xs text-amber-900 font-medium leading-relaxed">
+                Demo credentials are visible for evaluation only. Remove before deploying to
+                production.
+              </span>
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <p className="text-center mt-6 text-purple-100 text-sm font-medium">
-          Authorized Personnel Only • All Activity Monitored
-        </p>
+          <p className="text-center mt-8 text-xs text-slate-400 font-medium">
+            Authorised personnel only • All activity monitored and audited
+          </p>
+        </div>
       </div>
     </div>
   );
 };
+
+interface DemoButtonProps {
+  role: string;
+  tag: string;
+  onClick: () => void;
+  disabled: boolean;
+  tone: 'emerald' | 'indigo' | 'rose';
+}
+
+const TONE: Record<DemoButtonProps['tone'], string> = {
+  emerald: 'border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50 text-emerald-700',
+  indigo: 'border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50 text-indigo-700',
+  rose: 'border-rose-200 hover:border-rose-300 hover:bg-rose-50 text-rose-700',
+};
+
+const DemoButton = ({ role, tag, onClick, disabled, tone }: DemoButtonProps) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className={`group flex flex-col items-start gap-0.5 px-3 py-2.5 bg-white border rounded-xl text-left transition-all disabled:opacity-50 ${TONE[tone]}`}
+  >
+    <span className="text-[11px] font-bold tracking-wider">{role}</span>
+    <span className="text-[10px] text-slate-400 font-medium">{tag}</span>
+  </button>
+);

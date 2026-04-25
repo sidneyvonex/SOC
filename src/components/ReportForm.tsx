@@ -14,7 +14,7 @@ import {
   FileText,
   ShieldCheck,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 
 interface ReportFormProps {
   isOpen: boolean;
@@ -59,18 +59,14 @@ export const ReportForm = ({ isOpen, onClose, reports, setReports }: ReportFormP
     e.preventDefault();
 
     if (!agent.trim() || !location.trim() || !timestamp.trim() || !summary.trim()) {
-      await Swal.fire({
-        icon: 'warning',
-        title: 'Missing fields',
-        text: 'All fields are required to log a field report.',
+      toast.warning('Missing fields', {
+        description: 'All fields are required to log a field report.',
       });
       return;
     }
     if (summary.trim().length < 10) {
-      await Swal.fire({
-        icon: 'warning',
-        title: 'Summary too short',
-        text: 'Provide at least 10 characters of context.',
+      toast.warning('Summary too short', {
+        description: 'Provide at least 10 characters of context.',
       });
       return;
     }
@@ -102,12 +98,9 @@ export const ReportForm = ({ isOpen, onClose, reports, setReports }: ReportFormP
     reset();
     onClose();
 
-    await Swal.fire({
-      icon: 'success',
-      title: 'Report Submitted',
-      text: `Field report from ${newReport.agent} has been logged.`,
-      timer: 1800,
-      showConfirmButton: false,
+    toast.success('Report submitted', {
+      description: `Field report from ${newReport.agent} has been logged.`,
+      duration: 2200,
     });
   };
 

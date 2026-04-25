@@ -1,26 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
-
-/**
- * Main Application Component
- * Sets up routing and authentication context
- */
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Redirect root to login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-          
-          {/* Public route */}
           <Route path="/login" element={<Login />} />
-          
-          {/* Protected routes */}
           <Route
             path="/dashboard"
             element={
@@ -29,10 +20,20 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
-          {/* 404 - Redirect to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          expand={false}
+          toastOptions={{
+            style: {
+              fontFamily: 'inherit',
+            },
+          }}
+        />
       </AuthProvider>
     </BrowserRouter>
   );

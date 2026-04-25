@@ -20,8 +20,9 @@ import {
   ArrowUpDown,
   Plus,
   Inbox,
+  ShieldAlert,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { toast } from 'sonner';
 
 interface ReportFeedProps {
   reports: FieldReport[];
@@ -79,39 +80,45 @@ export const ReportFeed = ({
     }
   };
 
-  const handleStatusChange = async (reportId: string, newStatus: ReportStatus) => {
+  const handleStatusChange = (reportId: string, newStatus: ReportStatus) => {
     const report = reports.find((r) => r.id === reportId);
-    if (!report || !canEditReport(report)) {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Permission Denied',
-        text: 'Your clearance level does not permit this action.',
+    if (!report) return;
+    if (!canEditReport(report)) {
+      toast.error('Permission denied', {
+        description: 'Your clearance level does not permit this action.',
       });
       return;
     }
+    if (report.status === newStatus) return;
 
-    const updatedReports = reports.map((r) =>
-      r.id === reportId
-        ? {
-            ...r,
-            status: newStatus,
-            updatedAt: new Date(),
-            lastModifiedBy: user?.username,
-          }
-        : r,
-    );
+    const previousStatus = report.status;
 
-    setReports(updatedReports);
-    sessionStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(updatedReports));
+    const apply = (status: ReportStatus) => {
+      const next = reports.map((r) =>
+        r.id === reportId
+          ? { ...r, status, updatedAt: new Date(), lastModifiedBy: user?.username }
+          : r,
+      );
+      setReports(next);
+      sessionStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(next));
+      console.log(`[AUDIT] ${user?.username} changed ${reportId} → ${status}`);
+    };
 
-    console.log(`[AUDIT] ${user?.username} changed ${reportId} → ${newStatus}`);
+    apply(newStatus);
 
-    await Swal.fire({
-      icon: 'success',
-      title: 'Status Updated',
-      text: `Report status changed to ${newStatus}`,
-      timer: 1400,
-      showConfirmButton: false,
+    toast.success(`Status → ${newStatus}`, {
+      description: `Report #${reportId.slice(-6)} updated by ${user?.username}.`,
+      duration: 4000,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          apply(previousStatus);
+          toast.message('Status reverted', {
+            description: `Restored to ${previousStatus}.`,
+            duration: 1800,
+          });
+        },
+      },
     });
   };
 
@@ -354,30 +361,13 @@ export const ReportFeed = ({
                           </div>
 
                           {canEditReport(report) ? (
-                            <div className="border-t border-slate-200 pt-4">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                                Update status
-                              </span>
-                              <div className="flex flex-wrap gap-2">
-                                {(Object.values(ReportStatus) as ReportStatus[]).map((status) => (
-                                  <button
-                                    key={status}
-                                    onClick={() => handleStatusChange(report.id, status)}
-                                    disabled={report.status === status}
-                                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                                      report.status === status
-                                        ? `${STATUS_PILL[status]} cursor-default`
-                                        : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50'
-                                    }`}
-                                  >
-                                    {status}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
+                            <StatusStepper
+                              currentStatus={report.status}
+                              onChange={(s) => handleStatusChange(report.id, s)}
+                            />
                           ) : (
                             <div className="flex items-center gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
                               <span className="text-xs text-amber-900 font-medium">
                                 Read-only at your clearance level.
                               </span>
@@ -393,6 +383,96 @@ export const ReportFeed = ({
           </table>
         </div>
       )}
+    </div>
+  );
+};
+
+const STEP_ORDER: ReportStatus[] = [
+  ReportStatus.NEW,
+  ReportStatus.REVIEWED,
+  ReportStatus.ACTIONED,
+  ReportStatus.CLOSED,
+];
+
+const STEP_META: Record<
+  string,
+  { label: string; Icon: typeof AlertCircle; activeColor: string; ring: string }
+> = {
+  New:      { label: 'New',      Icon: AlertCircle,  activeColor: 'bg-indigo-500 text-white',   ring: 'ring-indigo-200' },
+  Reviewed: { label: 'Reviewed', Icon: Clock,        activeColor: 'bg-amber-500 text-white',    ring: 'ring-amber-200' },
+  Actioned: { label: 'Actioned', Icon: CheckCircle,  activeColor: 'bg-emerald-500 text-white',  ring: 'ring-emerald-200' },
+  Closed:   { label: 'Closed',   Icon: Archive,      activeColor: 'bg-slate-600 text-white',    ring: 'ring-slate-200' },
+};
+
+interface StatusStepperProps {
+  currentStatus: ReportStatus;
+  onChange: (status: ReportStatus) => void;
+}
+
+const StatusStepper = ({ currentStatus, onChange }: StatusStepperProps) => {
+  const currentIdx = STEP_ORDER.indexOf(currentStatus);
+
+  return (
+    <div className="border-t border-slate-200 pt-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          Update status
+        </span>
+        <span className="text-[11px] text-slate-400 font-medium">
+          Click any stage to advance — change is audited
+        </span>
+      </div>
+
+      <div className="relative">
+        {/* Connector line */}
+        <div className="absolute left-5 right-5 top-5 h-0.5 bg-slate-200 rounded-full" />
+        <div
+          className="absolute left-5 top-5 h-0.5 bg-linear-to-r from-indigo-400 via-amber-400 to-emerald-500 rounded-full transition-all duration-500"
+          style={{
+            width: `calc((100% - 2.5rem) * ${currentIdx / (STEP_ORDER.length - 1)})`,
+          }}
+        />
+
+        <ol className="relative grid grid-cols-4 gap-2">
+          {STEP_ORDER.map((status, idx) => {
+            const meta = STEP_META[status];
+            const isActive = idx === currentIdx;
+            const isComplete = idx < currentIdx;
+            const isReachable = !isActive;
+
+            return (
+              <li key={status} className="flex flex-col items-center text-center">
+                <button
+                  type="button"
+                  onClick={() => onChange(status)}
+                  disabled={isActive}
+                  aria-current={isActive ? 'step' : undefined}
+                  aria-label={`Set status to ${meta.label}`}
+                  className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all border-2 ${
+                    isActive
+                      ? `${meta.activeColor} border-transparent ring-4 ${meta.ring} cursor-default`
+                      : isComplete
+                        ? 'bg-white border-emerald-400 text-emerald-500 hover:scale-105'
+                        : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:scale-105'
+                  } ${isReachable ? 'cursor-pointer' : ''}`}
+                >
+                  <meta.Icon className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+                <span
+                  className={`mt-2 text-[11px] font-bold tracking-wide ${
+                    isActive ? 'text-slate-900' : 'text-slate-500'
+                  }`}
+                >
+                  {meta.label}
+                </span>
+                {isActive && (
+                  <span className="text-[10px] text-slate-400 font-medium mt-0.5">Current</span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </div>
   );
 };
