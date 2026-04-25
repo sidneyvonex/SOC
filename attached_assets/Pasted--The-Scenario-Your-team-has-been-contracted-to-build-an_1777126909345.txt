@@ -1,0 +1,49 @@
+
+The Scenario
+Your team has been contracted to build an internal tool for a security operations centre. The operations lead has sent you this brief:
+
+We need a dashboard where our team can log and track field reports. Each report comes in from an agent in the field and needs to be triaged by someone at HQ. We need to see what's new, what's been reviewed, and what needs urgent attention. Keep it simple but functional — this is internal, not public-facing. Remember, this system will handle sensitive information. Think about that.
+
+Here's a sample data set to work with:
+
+Field Reports:
+
+Agent: FALCON / Location: Mombasa / Time: 0730H / Priority: HIGH / Status: New Summary: Unusual cargo movement at port berth 7. Three unmarked containers offloaded outside normal schedule. Dock workers cleared the area before offload.
+Agent: EAGLE / Location: Nairobi / Time: 0915H / Priority: MEDIUM / Status: Reviewed Summary: Target BRAVO observed meeting unknown contact at Westgate area. Duration approx 40 minutes. Photos obtained.
+Agent: VIPER / Location: Kisumu / Time: 1200H / Priority: LOW / Status: New Summary: Routine surveillance of lakeside crossing points. No unusual activity. Local police presence normal.
+Agent: HAWK / Location: Malindi / Time: 1430H / Priority: CRITICAL / Status: New Summary: Intercepted communication referencing shipment arriving within 48 hours. Source reliability rated B2. Coordinates pending verification.
+Agent: SHADOW / Location: Nairobi / Time: 1600H / Priority: HIGH / Status: Actioned Summary: Safe house on Ngong Road confirmed compromised. Assets relocated. Forensic sweep requested.
+Your Task
+
+Build a working dashboard that includes:
+
+A report feed showing all field reports with clear visual distinction between priority levels (CRITICAL, HIGH, MEDIUM, LOW) and status (New, Reviewed, Actioned, Closed)
+The ability to change a report's status
+A filter or sort mechanism so the user can quickly find what needs attention
+A form to submit a new field report with agent codename, location, priority, and summary
+Some form of access control — not everyone should see everything
+Additionally, as you build, consider and be ready to discuss:
+
+How would you protect the data in this system?
+What should happen when someone logs in? What should they see and not see?
+How would you handle different clearance levels (e.g. an analyst vs a field commander vs an admin)?
+If this were deployed, what would worry you most about security?
+What would you do differently if this tool were accessed over the open internet vs a closed network?
+How did you use AI during this test, and what did you choose not to trust it with?
+You don't have to implement all of this. But we want to see that you thought about it. A login screen with no real auth behind it tells us something. A plain text password in your code tells us something too. Show us how you think about protecting information.
+
+What We're Looking For
+
+Taste: Does the UI feel right for an ops dashboard handling sensitive data?
+Judgement: What did you prioritise and why? What security tradeoffs did you make?
+Implementation: Does it run? Is the code structured sensibly?
+Security thinking: What decisions did you make — or flag — around protecting data, access, and privacy?
+Communication: Walk us through your thinking at the end.
+Rules
+
+Use any language, framework, or tool
+AI tools are fully allowed and encouraged
+The only thing that matters is that you built it and you can explain it
+
+At the end of the hour, walk us through what you built, what you'd improve, and specifically how you approached the security and data protection side. We'll ask questions.
+
