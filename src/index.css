@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 /* Custom global styles
  * NOTE: Do NOT add unlayered global resets like `* { margin:0; padding:0 }` here.
@@ -9,91 +9,60 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f6f7fb;
+  color: #0f172a;
 }
 
 /* Animations */
 @keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(30px, -50px) scale(1.1); }
+  66%  { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
 }
 
-.animate-blob {
-  animation: blob 7s infinite;
-}
+.animate-blob { animation: blob 7s infinite; }
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }
 
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
+/* Subtle scrollbar styling for the bright theme */
+.soc-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.soc-scroll::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 8px; }
+.soc-scroll::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
 
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-/* SweetAlert2 Custom Theme */
+/* SweetAlert2 Custom Theme — bright variant */
 .swal2-popup {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
-  border: 1px solid rgba(139, 92, 246, 0.3) !important;
-  border-radius: 1rem !important;
+  border-radius: 1.25rem !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15) !important;
 }
 
-.swal2-title {
-  color: #ffffff !important;
-  font-size: 1.5rem !important;
-  font-weight: 700 !important;
-}
-
-.swal2-html-container {
-  color: #cbd5e1 !important;
-}
+.swal2-title { color: #0f172a !important; font-weight: 700 !important; }
+.swal2-html-container { color: #475569 !important; }
 
 .swal2-confirm {
-  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%) !important;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
   border: none !important;
   border-radius: 0.75rem !important;
-  padding: 0.75rem 2rem !important;
+  padding: 0.65rem 1.5rem !important;
   font-weight: 600 !important;
-  transition: all 0.2s !important;
-}
-
-.swal2-confirm:hover {
-  transform: scale(1.05) !important;
+  box-shadow: 0 8px 20px -8px rgba(99, 102, 241, 0.6) !important;
 }
 
 .swal2-cancel {
-  background: rgba(71, 85, 105, 0.5) !important;
-  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: none !important;
   border-radius: 0.75rem !important;
-  padding: 0.75rem 2rem !important;
+  padding: 0.65rem 1.5rem !important;
   font-weight: 600 !important;
-  color: #ffffff !important;
 }
 
-.swal2-icon.swal2-error {
-  border-color: #ef4444 !important;
-  color: #ef4444 !important;
-}
-
-.swal2-icon.swal2-success {
-  border-color: #10b981 !important;
-  color: #10b981 !important;
-}
-
-.swal2-icon.swal2-warning {
-  border-color: #f59e0b !important;
-  color: #f59e0b !important;
-}
+.swal2-icon.swal2-error   { border-color: #ef4444 !important; color: #ef4444 !important; }
+.swal2-icon.swal2-success { border-color: #10b981 !important; color: #10b981 !important; }
+.swal2-icon.swal2-warning { border-color: #f59e0b !important; color: #f59e0b !important; }
+.swal2-icon.swal2-question { border-color: #6366f1 !important; color: #6366f1 !important; }

@@ -1,221 +1,283 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { FieldReport } from '../types';
 import { ReportFeed } from './ReportFeed';
+import { ReportForm } from './ReportForm';
 import { PriorityDistributionChart } from './PriorityDistributionChart';
 import { StatusOverviewChart } from './StatusOverviewChart';
+import { Sidebar } from './Sidebar';
+import { TopBar } from './TopBar';
+import { StatCard } from './StatCard';
 import { initialReports } from '../data/mockData';
 import { STORAGE_KEYS } from '../constants';
-import { 
-  Shield, 
-  RefreshCw, 
-  LogOut, 
-  AlertTriangle, 
-  FileText, 
-  Zap, 
-  BookOpen,
-  TrendingUp,
-  TrendingDown,
-  Activity
+import {
+  AlertTriangle,
+  FileText,
+  CheckCircle,
+  Activity,
+  ShieldCheck,
+  Lock,
+  EyeOff,
+  Server,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export const Dashboard = () => {
-  const { user, logout, canViewReport } = useAuth();
-  const [reports, setReports] = useState<FieldReport[]>([]);
+  const { user, logout, canViewReport, canEditReport } = useAuth();
+  const [allReports, setAllReports] = useState<FieldReport[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeNav, setActiveNav] = useState('dashboard');
+  const [showForm, setShowForm] = useState(false);
 
+  // Load / persist
   useEffect(() => {
-    const storedReports = sessionStorage.getItem(STORAGE_KEYS.REPORTS);
-    if (storedReports) {
+    const stored = sessionStorage.getItem(STORAGE_KEYS.REPORTS);
+    if (stored) {
       try {
-        setReports(JSON.parse(storedReports));
-      } catch (error) {
-        console.error('Failed to parse stored reports:', error);
-        setReports(initialReports);
+        const parsed = JSON.parse(stored) as FieldReport[];
+        setAllReports(
+          parsed.map((r) => ({
+            ...r,
+            createdAt: new Date(r.createdAt),
+            updatedAt: new Date(r.updatedAt),
+          })),
+        );
+      } catch {
+        setAllReports(initialReports);
       }
     } else {
-      setReports(initialReports);
+      setAllReports(initialReports);
       sessionStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(initialReports));
     }
   }, []);
 
-  const visibleReports = reports.filter(canViewReport);
+  const visibleReports = useMemo(
+    () => allReports.filter(canViewReport),
+    [allReports, canViewReport],
+  );
+
+  // Stats based on visible reports only
+  const stats = useMemo(() => {
+    const total = visibleReports.length;
+    const critical = visibleReports.filter((r) => r.priority === 'CRITICAL').length;
+    const open = visibleReports.filter((r) => r.status === 'New' || r.status === 'Reviewed').length;
+    const actioned = visibleReports.filter((r) => r.status === 'Actioned').length;
+    const hidden = allReports.length - visibleReports.length;
+    return { total, critical, open, actioned, hidden };
+  }, [visibleReports, allReports]);
+
+  // Per brief: any authenticated user can file a field report (gated by ProtectedRoute);
+  // editing/triage of existing reports is what's restricted by clearance.
+  const canSubmit = !!user;
 
   const handleLogout = async () => {
     const result = await Swal.fire({
-      title: 'Sign Out?',
-      text: 'Are you sure you want to sign out?',
+      title: 'Sign out?',
+      text: 'Your session will end and audit log will record this action.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Yes, sign out',
       cancelButtonText: 'Cancel',
       reverseButtons: true,
     });
-
     if (result.isConfirmed) {
-      await Swal.fire({
-        icon: 'success',
-        title: 'Signed Out',
-        text: 'Session terminated successfully',
-        timer: 1500,
-        showConfirmButton: false,
-      });
       logout();
     }
   };
 
-  const handleRefresh = async () => {
-    await Swal.fire({
-      icon: 'success',
-      title: 'Data Refreshed',
-      text: 'All data has been updated',
-      timer: 1000,
-      showConfirmButton: false,
-    });
+  // Setter that updates state and persists
+  const updateReports = (next: FieldReport[]) => {
+    setAllReports(next);
+    sessionStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(next));
   };
 
-  const criticalCount = visibleReports.filter(r => r.priority === 'CRITICAL').length;
-  const openIncidents = visibleReports.filter(r => r.status === 'New' || r.status === 'Reviewed').length;
+  // For ReportFeed: pass it visible reports and a setter that merges back into the full list
+  const setVisibleReports = (next: FieldReport[]) => {
+    // Map by id, preserving any reports the user can't see
+    const byId = new Map(next.map((r) => [r.id, r]));
+    const merged = allReports.map((r) => byId.get(r.id) ?? r);
+    // If new reports were added (not in original), append them
+    const existingIds = new Set(allReports.map((r) => r.id));
+    next.forEach((r) => {
+      if (!existingIds.has(r.id)) merged.unshift(r);
+    });
+    updateReports(merged);
+  };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <header className="bg-slate-800/95 backdrop-blur-md border-b border-purple-500/30 sticky top-0 z-50 shadow-lg">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-linear-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Shield className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">G4S Security Operations</h1>
-                  <p className="text-sm text-gray-300">
-                    Welcome back, <span className="text-white font-semibold">{user?.fullName}</span> • <span className="text-purple-400 font-semibold">{user?.clearanceLevel}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/40 rounded-xl">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                <span className="text-sm text-green-300 font-semibold">All Systems Operational</span>
-              </div>
-              <button 
-                onClick={handleRefresh}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors flex items-center gap-2 shadow-md"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span className="text-sm font-semibold">Refresh</span>
-              </button>
-              <button 
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors flex items-center gap-2 shadow-md"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="text-sm font-semibold">Sign Out</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen flex bg-slate-50">
+      <Sidebar active={activeNav} onNavigate={setActiveNav} />
 
-      <main className="p-6 space-y-6">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Active Threats */}
-          <div className="bg-linear-to-br from-red-500/20 to-red-600/20 border border-red-500/30 rounded-2xl p-6 hover:shadow-lg hover:shadow-red-500/20 transition-all group backdrop-blur-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-red-500/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <AlertTriangle className="w-6 h-6 text-red-400" />
-              </div>
-              <div className="flex items-center gap-1 text-red-400 text-sm font-semibold">
-                <TrendingUp className="w-4 h-4" />
-                <span>+12%</span>
-              </div>
-            </div>
+      <div className="flex-1 flex flex-col min-w-0">
+        <TopBar
+          pageTitle="Dashboard"
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onLogout={handleLogout}
+          onNewReport={() => setShowForm(true)}
+          canSubmit={canSubmit}
+        />
+
+        <main className="flex-1 px-6 py-6 space-y-6">
+          {/* Greeting */}
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-gray-300 text-sm font-semibold mb-1">Active Threats</p>
-              <p className="text-4xl font-bold text-white">{criticalCount}</p>
-              <p className="text-red-400 text-xs mt-2 font-medium">from last week</p>
+              <h1 className="text-2xl font-bold text-slate-900">
+                Welcome back, {user?.fullName?.split(' ')[0] ?? 'Operator'}
+              </h1>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Here&apos;s the field intelligence picture for today.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                All systems operational
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 font-semibold">
+                <Server className="w-3.5 h-3.5" />
+                Encrypted session
+              </span>
             </div>
           </div>
 
-          {/* IOCs Tracked */}
-          <div className="bg-linear-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-2xl p-6 hover:shadow-lg hover:shadow-blue-500/20 transition-all group backdrop-blur-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-500/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6 text-blue-400" />
-              </div>
-              <div className="flex items-center gap-1 text-blue-400 text-sm font-semibold">
-                <TrendingUp className="w-4 h-4" />
-                <span>+5.2%</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-gray-300 text-sm font-semibold mb-1">IOCs Tracked</p>
-              <p className="text-4xl font-bold text-white">{visibleReports.length}</p>
-              <p className="text-blue-400 text-xs mt-2 font-medium">from last week</p>
+          {/* Stat cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <StatCard
+              label="Critical incidents"
+              value={stats.critical}
+              icon={AlertTriangle}
+              tone="rose"
+              delta={12}
+            />
+            <StatCard
+              label="Open queue"
+              value={stats.open}
+              icon={FileText}
+              tone="amber"
+              delta={-23}
+            />
+            <StatCard
+              label="Actioned"
+              value={stats.actioned}
+              icon={CheckCircle}
+              tone="emerald"
+              delta={8}
+            />
+            <StatCard
+              label="Total visible"
+              value={stats.total}
+              icon={Activity}
+              tone="indigo"
+              delta={5}
+            />
+          </div>
+
+          {/* Operator info + charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <OperatorCard hiddenCount={stats.hidden} />
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <PriorityDistributionChart reports={visibleReports} />
+              <StatusOverviewChart reports={visibleReports} />
             </div>
           </div>
 
-          {/* Open Incidents */}
-          <div className="bg-linear-to-br from-yellow-500/20 to-yellow-600/20 border border-yellow-500/30 rounded-2xl p-6 hover:shadow-lg hover:shadow-yellow-500/20 transition-all group backdrop-blur-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-yellow-500/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Zap className="w-6 h-6 text-yellow-400" />
-              </div>
-              <div className="flex items-center gap-1 text-green-400 text-sm font-semibold">
-                <TrendingDown className="w-4 h-4" />
-                <span>-23%</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-gray-300 text-sm font-semibold mb-1">Open Incidents</p>
-              <p className="text-4xl font-bold text-white">{openIncidents}</p>
-              <p className="text-green-400 text-xs mt-2 font-medium">from last week</p>
-            </div>
-          </div>
+          {/* Field reports */}
+          <ReportFeed
+            reports={visibleReports}
+            setReports={setVisibleReports}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onNewReport={() => setShowForm(true)}
+            canSubmit={canSubmit}
+          />
 
-          {/* Knowledge Articles */}
-          <div className="bg-linear-to-br from-purple-500/20 to-purple-600/20 border border-purple-500/30 rounded-2xl p-6 hover:shadow-lg hover:shadow-purple-500/20 transition-all group backdrop-blur-sm">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-500/30 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <BookOpen className="w-6 h-6 text-purple-400" />
-              </div>
-              <div className="flex items-center gap-1 text-purple-400 text-sm font-semibold">
-                <TrendingUp className="w-4 h-4" />
-                <span>+6%</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-gray-300 text-sm font-semibold mb-1">Knowledge Articles</p>
-              <p className="text-4xl font-bold text-white">0</p>
-              <p className="text-purple-400 text-xs mt-2 font-medium">from last week</p>
-            </div>
-          </div>
-        </div>
+          {/* Footer */}
+          <footer className="pt-2 pb-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-400">
+            <Lock className="w-3.5 h-3.5" />
+            All activity audited and logged. Clearance{' '}
+            <span className="font-semibold text-slate-600">
+              {user?.clearanceLevel?.replace('_', ' ')}
+            </span>{' '}
+            • You can edit:{' '}
+            <span className="font-semibold text-slate-600">
+              {visibleReports.filter(canEditReport).length}
+            </span>
+            /{stats.total}
+          </footer>
+        </main>
+      </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <PriorityDistributionChart reports={visibleReports} />
-          <StatusOverviewChart reports={visibleReports} />
-        </div>
-
-        {/* Report Feed */}
-        <ReportFeed reports={visibleReports} setReports={setReports} />
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-800/90 backdrop-blur-md border-t border-purple-500/30 py-4 shadow-lg">
-        <div className="px-6">
-          <div className="flex items-center justify-center gap-2 text-gray-300 text-sm font-medium">
-            <Activity className="w-4 h-4 text-purple-400" />
-            <span>All activity monitored and logged • Clearance: <span className="text-purple-400 font-semibold">{user?.clearanceLevel}</span> • Session active</span>
-          </div>
-        </div>
-      </footer>
+      {/* Modal */}
+      <ReportForm
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        reports={allReports}
+        setReports={updateReports}
+      />
     </div>
   );
 };
+
+const OperatorCard = ({ hiddenCount }: { hiddenCount: number }) => {
+  const { user } = useAuth();
+  return (
+    <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-base font-bold text-slate-900">Operator Profile</h3>
+          <p className="text-xs text-slate-500">Session credentials</p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-violet-50 ring-4 ring-violet-100 flex items-center justify-center">
+          <ShieldCheck className="w-5 h-5 text-violet-500" />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <Row icon="👤" label="Full name" value={user?.fullName ?? '—'} />
+        <Row icon="🪪" label="Username" value={user?.username ?? '—'} />
+        <Row
+          icon="🛡️"
+          label="Clearance"
+          value={user?.clearanceLevel?.replace('_', ' ') ?? '—'}
+        />
+        <Row
+          icon="🕒"
+          label="Last login"
+          value={
+            user?.lastLogin
+              ? new Date(user.lastLogin).toLocaleString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : 'Now'
+          }
+        />
+      </div>
+
+      {hiddenCount > 0 && (
+        <div className="mt-4 flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <EyeOff className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
+          <p className="text-xs text-slate-600 leading-relaxed">
+            <span className="font-semibold text-slate-800">{hiddenCount}</span> report
+            {hiddenCount === 1 ? '' : 's'} hidden — your clearance level does not permit access.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Row = ({ icon, label, value }: { icon: string; label: string; value: string }) => (
+  <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-b-0">
+    <div className="flex items-center gap-2.5 text-sm text-slate-600 font-medium">
+      <span className="text-base">{icon}</span>
+      {label}
+    </div>
+    <div className="text-sm text-slate-900 font-semibold truncate max-w-[55%] text-right">
+      {value}
+    </div>
+  </div>
+);

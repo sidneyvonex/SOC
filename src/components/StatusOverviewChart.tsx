@@ -8,10 +8,10 @@ interface StatusOverviewChartProps {
 }
 
 const STATUS_COLORS = {
-  [ReportStatus.NEW]: '#3b82f6',
+  [ReportStatus.NEW]: '#6366f1',
   [ReportStatus.REVIEWED]: '#f59e0b',
   [ReportStatus.ACTIONED]: '#10b981',
-  [ReportStatus.CLOSED]: '#6b7280',
+  [ReportStatus.CLOSED]: '#94a3b8',
 };
 
 export const StatusOverviewChart = ({ reports }: StatusOverviewChartProps) => {
@@ -20,53 +20,59 @@ export const StatusOverviewChart = ({ reports }: StatusOverviewChartProps) => {
     return acc;
   }, {} as Record<string, number>);
 
-  const data = Object.entries(statusCounts).map(([status, count]) => ({
-    name: status.replace(/_/g, ' '),
-    value: count,
-    color: STATUS_COLORS[status as keyof typeof STATUS_COLORS],
+  // Always show all four buckets (even if zero) so the chart looks balanced
+  const data = (Object.values(ReportStatus) as ReportStatus[]).map((status) => ({
+    name: status,
+    value: statusCounts[status] || 0,
+    color: STATUS_COLORS[status],
   }));
 
   return (
-    <div className="bg-linear-to-br from-slate-800/90 to-slate-700/90 border border-blue-500/30 rounded-2xl p-6 backdrop-blur-md hover:shadow-xl hover:shadow-blue-500/20 transition-all">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-linear-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
-          <BarChart3 className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-white">Status Overview</h3>
-          <p className="text-sm text-gray-300">Reports by current status</p>
+    <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs h-full">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 ring-4 ring-indigo-100 flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-indigo-500" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Status Overview</h3>
+            <p className="text-xs text-slate-500">Reports by current status</p>
+          </div>
         </div>
       </div>
-      <div>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis 
-              dataKey="name" 
-              tick={{ fill: '#94a3b8', fontSize: 12 }}
-              axisLine={{ stroke: '#334155' }}
-            />
-            <YAxis 
-              tick={{ fill: '#94a3b8', fontSize: 12 }}
-              axisLine={{ stroke: '#334155' }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#1e293b', 
-                border: '1px solid #334155',
-                borderRadius: '8px',
-                color: '#fff'
-              }}
-              cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
-            />
-            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={data} margin={{ top: 20, right: 10, left: -10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fill: '#94a3b8', fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            allowDecimals={false}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              color: '#0f172a',
+              boxShadow: '0 10px 25px -10px rgba(15,23,42,0.15)',
+            }}
+            cursor={{ fill: 'rgba(99, 102, 241, 0.06)' }}
+          />
+          <Bar dataKey="value" radius={[10, 10, 0, 0]} maxBarSize={48}>
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 };

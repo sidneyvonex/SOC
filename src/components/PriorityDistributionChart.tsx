@@ -9,8 +9,8 @@ interface PriorityDistributionChartProps {
 
 const PRIORITY_COLORS = {
   [Priority.CRITICAL]: '#ef4444',
-  [Priority.HIGH]: '#f97316',
-  [Priority.MEDIUM]: '#eab308',
+  [Priority.HIGH]: '#fb923c',
+  [Priority.MEDIUM]: '#facc15',
   [Priority.LOW]: '#10b981',
 };
 
@@ -27,49 +27,57 @@ export const PriorityDistributionChart = ({ reports }: PriorityDistributionChart
   }));
 
   return (
-    <div className="bg-linear-to-br from-slate-800/90 to-slate-700/90 border border-purple-500/30 rounded-2xl p-6 backdrop-blur-md hover:shadow-xl hover:shadow-purple-500/20 transition-all">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-linear-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-          <PieChartIcon className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold text-white">Priority Distribution</h3>
-          <p className="text-sm text-gray-300">Reports by threat level</p>
+    <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs h-full">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 ring-4 ring-rose-100 flex items-center justify-center">
+            <PieChartIcon className="w-5 h-5 text-rose-500" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Priority Distribution</h3>
+            <p className="text-xs text-slate-500">Reports by threat level</p>
+          </div>
         </div>
       </div>
-      <div>
-        <ResponsiveContainer width="100%" height={300}>
+
+      {data.length === 0 ? (
+        <div className="h-[280px] flex items-center justify-center text-sm text-slate-400">
+          No reports to chart
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={280}>
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={100}
-              fill="#8884d8"
+              innerRadius={55}
+              outerRadius={95}
               paddingAngle={3}
               dataKey="value"
-              label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+              stroke="#fff"
+              strokeWidth={2}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#1e293b', 
-                border: '1px solid #334155',
-                borderRadius: '8px',
-                color: '#fff'
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                color: '#0f172a',
+                boxShadow: '0 10px 25px -10px rgba(15,23,42,0.15)',
               }}
             />
-            <Legend 
+            <Legend
               iconType="circle"
-              wrapperStyle={{ paddingTop: '20px' }}
+              wrapperStyle={{ paddingTop: '12px', fontSize: '12px', color: '#475569' }}
             />
           </PieChart>
         </ResponsiveContainer>
-      </div>
+      )}
     </div>
   );
 };
