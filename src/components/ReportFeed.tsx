@@ -1,4 +1,4 @@
-import { useState, Fragment, useMemo } from 'react';
+import { useState, Fragment, useMemo, useEffect } from 'react';
 import type { FieldReport } from '../types';
 import { ReportStatus, Priority } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -411,21 +411,37 @@ interface StatusStepperProps {
 
 const StatusStepper = ({ currentStatus, onChange }: StatusStepperProps) => {
   const currentIdx = STEP_ORDER.indexOf(currentStatus);
+  const [pending, setPending] = useState<ReportStatus | null>(null);
+
+  // Clear stale pending if currentStatus updated externally to that value
+  useEffect(() => {
+    if (pending && pending === currentStatus) setPending(null);
+  }, [currentStatus, pending]);
+
+  const pendingMeta = pending ? STEP_META[pending] : null;
+
+  const handleConfirm = () => {
+    if (pending) {
+      onChange(pending);
+      setPending(null);
+    }
+  };
 
   return (
     <div className="border-t border-slate-200 pt-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 gap-2">
         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
           Update status
         </span>
-        <span className="text-[11px] text-slate-400 font-medium">
-          Click any stage to advance — change is audited
+        <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+          Select a stage — confirmation required
         </span>
       </div>
 
       <div className="relative">
-        {/* Connector line */}
+        {/* Base connector */}
         <div className="absolute left-5 right-5 top-5 h-0.5 bg-slate-200 rounded-full" />
+        {/* Filled connector to current */}
         <div
           className="absolute left-5 top-5 h-0.5 bg-linear-to-r from-indigo-400 via-amber-400 to-emerald-500 rounded-full transition-all duration-500"
           style={{
@@ -433,46 +449,95 @@ const StatusStepper = ({ currentStatus, onChange }: StatusStepperProps) => {
           }}
         />
 
-        <ol className="relative grid grid-cols-4 gap-2">
+        <ol className="relative grid grid-cols-4 gap-1 sm:gap-2">
           {STEP_ORDER.map((status, idx) => {
             const meta = STEP_META[status];
             const isActive = idx === currentIdx;
             const isComplete = idx < currentIdx;
-            const isReachable = !isActive;
+            const isPending = pending === status;
 
             return (
               <li key={status} className="flex flex-col items-center text-center">
                 <button
                   type="button"
-                  onClick={() => onChange(status)}
-                  disabled={isActive}
+                  onClick={() => {
+                    if (isActive) return;
+                    setPending(isPending ? null : status);
+                  }}
                   aria-current={isActive ? 'step' : undefined}
+                  aria-pressed={isPending}
                   aria-label={`Set status to ${meta.label}`}
                   className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all border-2 ${
                     isActive
                       ? `${meta.activeColor} border-transparent ring-4 ${meta.ring} cursor-default`
-                      : isComplete
-                        ? 'bg-white border-emerald-400 text-emerald-500 hover:scale-105'
-                        : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:scale-105'
-                  } ${isReachable ? 'cursor-pointer' : ''}`}
+                      : isPending
+                        ? `${meta.activeColor} border-transparent ring-4 ${meta.ring} animate-pulse`
+                        : isComplete
+                          ? 'bg-white border-emerald-400 text-emerald-500 hover:scale-105'
+                          : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:scale-105'
+                  } ${!isActive ? 'cursor-pointer' : ''}`}
                 >
                   <meta.Icon className="w-4 h-4" strokeWidth={2.5} />
                 </button>
                 <span
-                  className={`mt-2 text-[11px] font-bold tracking-wide ${
-                    isActive ? 'text-slate-900' : 'text-slate-500'
+                  className={`mt-2 text-[10px] sm:text-[11px] font-bold tracking-wide ${
+                    isActive || isPending ? 'text-slate-900' : 'text-slate-500'
                   }`}
                 >
                   {meta.label}
                 </span>
                 {isActive && (
-                  <span className="text-[10px] text-slate-400 font-medium mt-0.5">Current</span>
+                  <span className="text-[10px] text-slate-400 font-medium mt-0.5 hidden sm:inline">
+                    Current
+                  </span>
+                )}
+                {isPending && (
+                  <span className="text-[10px] text-indigo-500 font-bold mt-0.5">Pending</span>
                 )}
               </li>
             );
           })}
         </ol>
       </div>
+
+      {/* Confirmation panel — appears when a pending status is selected */}
+      {pending && pendingMeta && (
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200">
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-9 h-9 rounded-xl ${pendingMeta.activeColor} flex items-center justify-center shrink-0`}
+            >
+              <pendingMeta.Icon className="w-4 h-4" strokeWidth={2.5} />
+            </div>
+            <div className="text-sm text-slate-700 leading-snug">
+              <div className="font-semibold text-slate-900">
+                Confirm change: {STEP_META[currentStatus].label}{' '}
+                <span className="text-slate-400">→</span> {pendingMeta.label}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                This update is signed against your operator ID and recorded in the audit log.
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 sm:shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setPending(null)}
+              className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-white transition shadow-md ${pendingMeta.activeColor.split(' ')[0]} hover:opacity-90`}
+            >
+              <CheckCircle className="w-3.5 h-3.5" />
+              Confirm change
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -33,6 +33,7 @@ export const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeNav, setActiveNav] = useState('dashboard');
   const [showForm, setShowForm] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Load / persist
   useEffect(() => {
@@ -115,7 +116,12 @@ export const Dashboard = () => {
 
   return (
     <div className="min-h-screen flex bg-slate-50">
-      <Sidebar active={activeNav} onNavigate={setActiveNav} />
+      <Sidebar
+        active={activeNav}
+        onNavigate={setActiveNav}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar
@@ -124,10 +130,11 @@ export const Dashboard = () => {
           onSearchChange={setSearchTerm}
           onLogout={handleLogout}
           onNewReport={() => setShowForm(true)}
+          onMenuToggle={() => setSidebarOpen((v) => !v)}
           canSubmit={canSubmit}
         />
 
-        <main className="flex-1 px-6 py-6 space-y-6">
+        <main className="flex-1 px-4 sm:px-6 py-5 sm:py-6 space-y-5 sm:space-y-6">
           {/* Greeting */}
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
